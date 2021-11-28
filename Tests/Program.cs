@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using CppAst;
 using Il2CppMetamanage.Library;
@@ -40,8 +41,52 @@ namespace Tests
 
             while (true)
             {
-                TestFields();
+                TestLoaderFunctionality();
+                Console.WriteLine("Any key to continue...");
+                Console.ReadKey();
+                Console.Clear();
             }
+        }
+
+        static void TestLoaderFunctionality()
+        {
+            Console.WriteLine("[1] Class count: " + SQLDataManager.ClassLoader.Count);
+            Console.WriteLine("[2] Enum count: " + SQLDataManager.EnumLoader.Count);
+            Console.WriteLine("[3] Field count: " + SQLDataManager.FieldLoader.Count);
+            Console.WriteLine("[4] Function count: " + SQLDataManager.FunctionLoader.Count);
+            Console.WriteLine("[5] Typedef count: " + SQLDataManager.TypedefLoader.Count);
+
+            Console.Write("Select type [1-5]: ");
+            var elementType = int.Parse(Console.ReadLine());
+            if (elementType > 5 || elementType < 1)
+                return;
+
+            Console.Write("Input start id: ");
+            var startId = int.Parse(Console.ReadLine());
+
+            Console.Write("Input count: ");
+            var count = int.Parse(Console.ReadLine());
+
+            var elements = new List<SQLEntry>();
+            switch (elementType)
+            {
+                case 1:
+                    elements.AddRange(SQLDataManager.ClassLoader.GetNextElements(startId, count));
+                    break;
+                case 2:
+                    elements.AddRange(SQLDataManager.EnumLoader.GetNextElements(startId, count));
+                    break;
+                case 3:
+                    elements.AddRange(SQLDataManager.FieldLoader.GetNextElements(startId, count));
+                    break;
+                case 4:
+                    elements.AddRange(SQLDataManager.FunctionLoader.GetNextElements(startId, count));
+                    break;
+                case 5:
+                    elements.AddRange(SQLDataManager.TypedefLoader.GetNextElements(startId, count));
+                    break;
+            }
+            elements.ForEach((element) => Console.WriteLine(element));
         }
 
         static void TestFields()
@@ -50,8 +95,8 @@ namespace Tests
             var fieldId = int.Parse(Console.ReadLine());
 
             Console.WriteLine("Finding field...");
-            var promise = SQLDataManager.FieldLoader.AddToOrder(fieldId);
-            SQLDataManager.FieldLoader.LoadOrdered();
+            var promise = SQLDataManager.FieldLoader.GetPromise(fieldId);
+            SQLDataManager.FieldLoader.LoadPromised();
 
             var field = promise.Value as SQLCppGlobalField;
             Console.WriteLine(field);
@@ -63,10 +108,8 @@ namespace Tests
             var classId = int.Parse(Console.ReadLine());
 
             Console.WriteLine("Finding dependencies...");
-            var promise = SQLDataManager.ClassLoader.AddToOrder(classId);
-            SQLDataManager.ClassLoader.LoadOrdered();
+            var cls = SQLDataManager.ClassLoader[classId];
 
-            var cls = promise.Value as SQLCppClass;
             var dependencies = SQLDataManager.GetDependencies(new SQLCppClass[] { cls });
             Console.WriteLine($"Found {dependencies.Count} dependencies.");
         }

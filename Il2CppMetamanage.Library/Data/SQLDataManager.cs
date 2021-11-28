@@ -183,17 +183,17 @@ namespace Il2CppMetamanage.Library.Data
                         promise.Value = SQLCppPrimitive.GetPrimitive(typeId);
                         break;
                     case CppAst.CppTypeKind.StructOrClass:
-                        promise = ClassLoader.AddToOrder(typeId);
+                        promise = ClassLoader.GetPromise(typeId);
                         break;
                     case CppAst.CppTypeKind.Enum:
-                        promise = EnumLoader.AddToOrder(typeId);
+                        promise = EnumLoader.GetPromise(typeId);
                         break;
                     case CppAst.CppTypeKind.Function:
                         promise = new();
                         promise.Value = new SQLCppFunctionType(typeId);
                         break;
                     case CppAst.CppTypeKind.Typedef:
-                        promise = TypedefLoader.AddToOrder(typeId);
+                        promise = TypedefLoader.GetPromise(typeId);
                         break;
                     default:
                         throw new NotImplementedException();
@@ -201,9 +201,9 @@ namespace Il2CppMetamanage.Library.Data
                 types.Add(new (memberName, typeInfo, promise));
             }
 
-            ClassLoader.LoadOrdered();
-            TypedefLoader.LoadOrdered();
-            EnumLoader.LoadOrdered();
+            ClassLoader.LoadPromised();
+            TypedefLoader.LoadPromised();
+            EnumLoader.LoadPromised();
 
             var result = new List<NamedType>();
             foreach (var entry in types)
@@ -256,6 +256,16 @@ namespace Il2CppMetamanage.Library.Data
             Connection.Open();
             
 			if (emptyDatabase) CreateDatabaseTables();
+        }
+
+        public static int GetCountTableElements(string tableName)
+        {
+            var command = Connection.CreateCommand();
+            command.CommandText = $"SELECT COUNT(*) FROM [{tableName}]";
+
+            using var reader = command.ExecuteReader();
+            reader.Read();
+            return reader.GetInt32(0);
         }
 
         public static void Close()

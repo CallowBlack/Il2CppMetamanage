@@ -8,64 +8,110 @@ namespace Il2CppMetamanage.Library.Data
     {
         public delegate void SQLFillElements(Dictionary<int, SQLEntryPromise> elements);
 
+        public int Count { get => _count.Item; }
+
+        public int CachedSize { get => _cachedElements.Count; }
+
+        public int MaxCachedSize { get => _maxCachedSize; 
+            set {
+                if (CachedSize > value)
+                    ClearCached();
+                _maxCachedSize = value;
+            } 
+        }
+
         public T this[int i]
         {
             get
             {
-                return _cachedDictionary[i];
+                if (!IsCached(i))
+                {
+                    var promise = new SQLEntryPromise();
+                    var dict = new Dictionary<int, SQLEntryPromise>
+                    {
+                        { i, promise }
+                    };
+                    _loaderCallback(dict);
+                    return promise.Value as T;
+                }
+                return _cachedElements[i];
             }
         }
         
-        public bool Contains(int i)
+        public bool IsCached(int i)
         {
-            return _cachedDictionary.ContainsKey(i);
+            return _cachedElements.ContainsKey(i);
         }
 
-        private readonly Dictionary<int, T> _cachedDictionary;
-        private readonly Stack<Tuple<int, SQLEntryPromise>> _cachedStack;
-        private readonly Dictionary<int, SQLEntryPromise> _cachedStackDict;
+        private readonly Dictionary<int, T> _cachedElements;
+
+        private readonly Stack<Tuple<int, SQLEntryPromise>> _promisedItems;
+        private readonly Dictionary<int, SQLEntryPromise> _promisedItemsDict;
 
         private readonly SQLFillElements _loaderCallback;
+
+        private readonly LoadableObject<int> _count;
+        private int _maxCachedSize = 1000;
 
         public SQLEntryLoader(SQLFillElements loaderCallback)
         {
             _loaderCallback = loaderCallback;
-            _cachedDictionary = new Dictionary<int, T>();
-            _cachedStack = new Stack<Tuple<int, SQLEntryPromise>>();
-            _cachedStackDict = new Dictionary<int, SQLEntryPromise>();
+            _cachedElements = new Dictionary<int, T>();
+            _promisedItems = new Stack<Tuple<int, SQLEntryPromise>>();
+            _promisedItemsDict = new Dictionary<int, SQLEntryPromise>();
+            _count = new(GetCount);
         }
 
-        public SQLEntryPromise AddToOrder(int id)
+        protected virtual int GetCount()
         {
-            if (_cachedStackDict.ContainsKey(id))
-                return _cachedStackDict[id];
+            return 0;
+        }
+
+        public virtual List<T> GetNextElements(int id, int count)
+        {
+            return null;
+        }
+
+        public SQLEntryPromise GetPromise(int id)
+        {
+            if (_promisedItemsDict.ContainsKey(id))
+                return _promisedItemsDict[id];
 
             var promiseObject = new SQLEntryPromise();
-            if (_cachedDictionary.ContainsKey(id))
+            if (_cachedElements.ContainsKey(id))
                 promiseObject.Value = this[id];
             else
             {
-                _cachedStack.Push(new(id, promiseObject));
-                _cachedStackDict.Add(id, promiseObject);
+                _promisedItems.Push(new(id, promiseObject));
+                _promisedItemsDict.Add(id, promiseObject);
             }
             return promiseObject;
         }
 
-        public void Add(T element)
+        public void ClearCached()
         {
-            if (!_cachedDictionary.ContainsKey(element.Id))
-                _cachedDictionary.Add(element.Id, element);
+            _cachedElements.Clear();
         }
 
-        public void LoadOrdered()
+        public void Add(T element)
         {
-            if (_cachedStack.Count == 0)
+            if (!_cachedElements.ContainsKey(element.Id))
+            {
+                if (MaxCachedSize <= CachedSize)
+                    ClearCached();
+                _cachedElements.Add(element.Id, element);
+            }   
+        }
+
+        public void LoadPromised()
+        {
+            if (_promisedItems.Count == 0)
                 return;
 
             var dictPromises = new Dictionary<int, SQLEntryPromise>();
-            while (_cachedStack.Count > 0)
+            while (_promisedItems.Count > 0)
             {
-                var item = _cachedStack.Pop();
+                var item = _promisedItems.Pop();
                 dictPromises.Add(item.Item1, item.Item2);
             }
 
@@ -73,7 +119,7 @@ namespace Il2CppMetamanage.Library.Data
 
             foreach (var entry in dictPromises)
             {
-                _cachedStackDict.Remove(entry.Key);
+                _promisedItemsDict.Remove(entry.Key);
 
                 var promise = entry.Value;
                 Add((T)promise.Value);

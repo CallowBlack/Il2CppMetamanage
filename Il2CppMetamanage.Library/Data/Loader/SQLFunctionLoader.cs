@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Il2CppMetamanage.Library.Data.Model;
+using Microsoft.Data.Sqlite;
 
 namespace Il2CppMetamanage.Library.Data.Loader
 {
@@ -25,17 +26,49 @@ namespace Il2CppMetamanage.Library.Data.Loader
 
             while (reader.Read())
             {
-                var id = reader.GetInt32(0);
-                var name = reader.GetString(1);
-                var isDefault = reader.GetInt32(2) > 0;
-                var address = reader.GetInt32(3);
-                var functionTypeId = reader.GetInt32(4);
-                var returnId = reader.GetInt32(5);
-
-                var functionType = new SQLCppFunctionType(functionTypeId, returnId);
-                var promise = promises[id];
-                promise.Value = new SQLCppFunction(id, name, isDefault, address, functionType);
+                var element = ReadElement(reader);
+                var promise = promises[element.Id];
+                promise.Value = element;
             }
+        }
+
+        private static SQLCppFunction ReadElement(SqliteDataReader reader)
+        {
+            var id = reader.GetInt32(0);
+            var name = reader.GetString(1);
+            var isDefault = reader.GetInt32(2) > 0;
+            var address = reader.GetInt32(3);
+            var functionTypeId = reader.GetInt32(4);
+            var returnId = reader.GetInt32(5);
+
+            var functionType = new SQLCppFunctionType(functionTypeId, returnId);
+
+            return new SQLCppFunction(id, name, isDefault, address, functionType);
+        }
+
+        protected override int GetCount()
+        {
+            return SQLDataManager.GetCountTableElements("CppFunctions");
+        }
+
+        public override List<SQLCppFunction> GetNextElements(int id, int count)
+        {
+            var command = SQLDataManager.Connection.CreateCommand();
+            command.CommandText = @$"
+                SELECT func.id, func.name, func.isDefault, func.address, func.functionTypeId, funcType.returnId 
+                FROM CppFunctions AS func 
+                LEFT JOIN CppFunctionTypes AS funcType ON func.functionTypeId = funcType.id 
+                WHERE func.id > {id} LIMIT {count}";
+            using var reader = command.ExecuteReader();
+
+            var elements = new List<SQLCppFunction>();
+            while (reader.Read())
+            {
+                var element = ReadElement(reader);
+                elements.Add(element);
+                Add(element);
+            }
+            return elements;
         }
     }
 }
