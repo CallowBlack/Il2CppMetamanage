@@ -30,10 +30,12 @@ namespace Il2CppMetamanage.Library
         private readonly Dictionary<string, CppAst.CppAttribute> classAligns = new();
         private readonly Dictionary<string, CppAst.CppAttribute> functionsAddresses = new();
         private readonly Dictionary<string, CppAst.CppAttribute> fieldsAdresses = new();
+        private readonly Dictionary<string, int> typePtrs = new();
 
         private static readonly Regex alignRegex = new(@"(?:__attribute__\(\(aligned\((?<Align>\d+)\)\)\)|__declspec\(align\((?<Align>\d+)\)\)) (?<Name>[\w\d_]+) {");
         private static readonly Regex funcAdrRegex = new(@"DO_APP_FUNC\(0x(?<Address>[\dA-F]+), [^,]+, (?<Name>[\w\d_]+),");
         private static readonly Regex fieldsAdrRegex = new(@"DO_APP_FUNC_METHODINFO\(0x(?<Address>[\dA-F]+), (?<Name>[\w\d_]+)");
+        private static readonly Regex typePtrRegex = new(@"DO_TYPEDEF\(0x(?<Address>[\dA-F]+), (?<Name>[\w\d_]+)\);");
 
         private static readonly string[] forbiddenWords = new[] {
             "__attribute__((aligned(8)))",
@@ -90,7 +92,23 @@ namespace Il2CppMetamanage.Library
             fieldsAdresses.Add(name, attribute);
         }
 
-        public CppAst.CppCompilation ParseHeaderFile(string typeFilepath, string functionsFilepath)
+        private void AddTypesPtr(string typePtrFilepath)
+        {
+            using var reader = new StreamReader(typePtrFilepath);
+            string fileContent = reader.ReadToEnd();
+
+            var matches = typePtrRegex.Matches(fileContent);
+            foreach (Match match in matches)
+            {
+                var name = match.Groups["Name"].Value;
+                var addressText = match.Groups["Address"].Value;
+                var address = int.Parse(addressText, System.Globalization.NumberStyles.HexNumber);
+
+                typePtrs.Add(name, address);
+            }
+        }
+
+        public CppAst.CppCompilation ParseHeaderFile(string typeFilepath, string functionsFilepath, string typePtrFilepath)
         {
             string content;
             {
@@ -127,6 +145,8 @@ namespace Il2CppMetamanage.Library
                 content = content.Replace(word, "");
             }
 
+            AddTypesPtr(typePtrFilepath);
+
             var compilation = CppAst.CppParser.Parse(content);
             var namespaceStack = new Stack<CppAst.ICppGlobalDeclarationContainer>();
             namespaceStack.Push(compilation);
@@ -139,6 +159,21 @@ namespace Il2CppMetamanage.Library
                     {
                         cppClass.Attributes.Add(classAligns[cppClass.Name]);
                         classAligns.Remove(cppClass.Name);
+                    }
+
+                    if (typePtrs.ContainsKey(cppClass.Name))
+                    {
+                        var field = new CppAst.CppField(cppClass, "_" + cppClass.Name);
+                        field.Attributes = new();
+                        field.Attributes.Add(new CppAst.CppAttribute("typePtr"));
+
+                        var addressAttr = new CppAst.CppAttribute("address")
+                        {
+                            Arguments = typePtrs[cppClass.Name].ToString()
+                        };
+                        field.Attributes.Add(addressAttr);
+
+                        currentNamespace.Fields.Add(field);
                     }
                 }
 

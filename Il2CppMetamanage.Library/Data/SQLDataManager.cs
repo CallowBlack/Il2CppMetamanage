@@ -20,6 +20,7 @@ namespace Il2CppMetamanage.Library.Data
         public static SQLEnumLoader EnumLoader { get; private set; }
         public static SQLFunctionLoader FunctionLoader { get; private set; }
         public static SQLTypedefLoader TypedefLoader { get; private set; }
+        public static SQLFieldLoader FieldLoader { get; private set; }
 
         public struct NamedType
         {
@@ -249,6 +250,7 @@ namespace Il2CppMetamanage.Library.Data
             ClassLoader = new();
             EnumLoader = new();
             FunctionLoader = new();
+            FieldLoader = new();
 
 			Connection = new SqliteConnection($"Data Source={@databasePath}");
             Connection.Open();
