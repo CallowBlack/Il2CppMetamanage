@@ -14,12 +14,8 @@ namespace Il2CppMetamanage.Library.Data.Model
         
         public int PointerLevel { get; }
 
-        private readonly CppAst.CppTypeKind _typeKind;
-
-        public SQLCppTypeInfo(int id, CppAst.CppTypeKind typeKind, int pointerLevel, int arraySize) : base(id)
+        public SQLCppTypeInfo(int id, int pointerLevel, int arraySize) : base(id)
         {
-            _typeKind = typeKind;
-
             PointerLevel = pointerLevel;
             ArraySize = arraySize;
         }

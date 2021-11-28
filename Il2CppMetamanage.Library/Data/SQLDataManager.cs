@@ -71,7 +71,7 @@ namespace Il2CppMetamanage.Library.Data
             return param;
         }
         
-        public static List<SQLEntry> GetDependencies(IEnumerable<SQLEntry> targets)
+        public static List<SQLEntry> GetDependencies(IEnumerable<SQLNamedEntry> targets)
         {
             HashSet<SQLEntry> typeInfoSet = new();
             List<SQLEntry> dependencies = new();
@@ -173,7 +173,7 @@ namespace Il2CppMetamanage.Library.Data
                 var arraySize = reader.GetInt32(4);
                 var typeId = reader.GetInt32(5);
 
-                var typeInfo = new SQLCppTypeInfo(elementId, elementKind, pointerLevel, arraySize);
+                var typeInfo = new SQLCppTypeInfo(elementId, pointerLevel, arraySize);
                 SQLEntryPromise promise = null;
                 switch (elementKind)
                 {
@@ -201,7 +201,6 @@ namespace Il2CppMetamanage.Library.Data
             }
 
             ClassLoader.LoadOrdered();
-            // FunctionLoader.LoadOrdered();
             TypedefLoader.LoadOrdered();
             EnumLoader.LoadOrdered();
 
@@ -412,12 +411,10 @@ namespace Il2CppMetamanage.Library.Data
                 return $"{(int)elementType.TypeKind} {elementType.GetHashCode()} {GetPointerLevel(cppType)} {GetArraySize(cppType)}";
             }
 
-
             string GetUniqueNameFromFunctionType(FunctionTypeWrapper funcType)
             {
                 return funcType.isFunction ? $"{funcType.function.GetHashCode()}" : GetUniqueName(funcType.functionType);
             }
-
 
             #region FillDataLists
             var namespaces = new List<CppAst.ICppGlobalDeclarationContainer>();
@@ -877,7 +874,6 @@ namespace Il2CppMetamanage.Library.Data
                                 break;
                             default:
                                 throw new NotImplementedException($"Type {elementType.TypeKind} not implemented to load into database.");
-
                         };
 
                         kindParam.Value = (int)elementType.TypeKind;

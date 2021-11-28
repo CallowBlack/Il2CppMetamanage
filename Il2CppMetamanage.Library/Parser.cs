@@ -31,11 +31,11 @@ namespace Il2CppMetamanage.Library
         private readonly Dictionary<string, CppAst.CppAttribute> functionsAddresses = new();
         private readonly Dictionary<string, CppAst.CppAttribute> fieldsAdresses = new();
 
-        private static Regex alignRegex = new Regex(@"(?:__attribute__\(\(aligned\((?<Align>\d+)\)\)\)|__declspec\(align\((?<Align>\d+)\)\)) (?<Name>[\w\d_]+) {");
-        private static Regex funcAdrRegex = new Regex(@"DO_APP_FUNC\(0x(?<Address>[\dA-F]+), [^,]+, (?<Name>[\w\d_]+),");
-        private static Regex fieldsAdrRegex = new Regex(@"DO_APP_FUNC_METHODINFO\(0x(?<Address>[\dA-F]+), (?<Name>[\w\d_]+)");
+        private static readonly Regex alignRegex = new(@"(?:__attribute__\(\(aligned\((?<Align>\d+)\)\)\)|__declspec\(align\((?<Align>\d+)\)\)) (?<Name>[\w\d_]+) {");
+        private static readonly Regex funcAdrRegex = new(@"DO_APP_FUNC\(0x(?<Address>[\dA-F]+), [^,]+, (?<Name>[\w\d_]+),");
+        private static readonly Regex fieldsAdrRegex = new(@"DO_APP_FUNC_METHODINFO\(0x(?<Address>[\dA-F]+), (?<Name>[\w\d_]+)");
 
-        private static string[] wordsToRemove = new[] {
+        private static readonly string[] forbiddenWords = new[] {
             "__attribute__((aligned(8)))",
             "__declspec(align(8))",
             "#pragma pack(push, p1,4)",
@@ -43,6 +43,7 @@ namespace Il2CppMetamanage.Library
             "#include \"il2cpp-types.h\"",
             "using namespace app;"
         };
+
         private void AddAligns(string line)
         {   
             Match match = alignRegex.Match(line);
@@ -89,42 +90,30 @@ namespace Il2CppMetamanage.Library
             fieldsAdresses.Add(name, attribute);
         }
 
-        private void PrepareFile(ref string filecontent)
-        {
-            foreach (var word in wordsToRemove)
-            {
-                filecontent = filecontent.Replace(word, "");
-            }
-        }
-
         public CppAst.CppCompilation ParseHeaderFile(string typeFilepath, string functionsFilepath)
         {
-            string content = "";
+            string content;
             {
-
-                StringBuilder contentBuilder = new StringBuilder();
+                StringBuilder contentBuilder = new();
                 contentBuilder.Append(defaultTypedefs);
-                using (StreamReader reader = new StreamReader(typeFilepath))
+                using (var reader = new StreamReader(typeFilepath))
                 {
                     while (!reader.EndOfStream)
                     {
                         string line = reader.ReadLine();
                         AddAligns(line);
-                        // PrepareFileLine(ref line);
                         contentBuilder.AppendLine(line);
                     }
                 }
 
                 contentBuilder.AppendLine("namespace app {");
-
-                using (StreamReader reader = new StreamReader(functionsFilepath))
+                using (var reader = new StreamReader(functionsFilepath))
                 {
                     while (!reader.EndOfStream)
                     {
                         string line = reader.ReadLine();
                         AddFieldAddress(line);
                         AddFunctionAddress(line);
-                        // PrepareFileLine(ref line);
                         contentBuilder.AppendLine(line);
                     }
                 }
@@ -132,13 +121,13 @@ namespace Il2CppMetamanage.Library
 
                 content = contentBuilder.ToString();
             }
-            
-            PrepareFile(ref content);
 
-            Console.WriteLine($"Parsing header file...");
+            foreach (var word in forbiddenWords)
+            {
+                content = content.Replace(word, "");
+            }
+
             var compilation = CppAst.CppParser.Parse(content);
-
-            Console.WriteLine($"Post processing parse data.");
             var namespaceStack = new Stack<CppAst.ICppGlobalDeclarationContainer>();
             namespaceStack.Push(compilation);
             while (namespaceStack.Count > 0)
@@ -164,8 +153,6 @@ namespace Il2CppMetamanage.Library
 
                 foreach (var field in currentNamespace.Fields)
                 {
-
-
                     if (fieldsAdresses.ContainsKey(field.Name))
                     {
                         if (field.Attributes is null)
@@ -174,7 +161,6 @@ namespace Il2CppMetamanage.Library
                         fieldsAdresses.Remove(field.Name);
                     }
                 }
-
 
                 foreach (var childNamespace in currentNamespace.Namespaces)
                 {

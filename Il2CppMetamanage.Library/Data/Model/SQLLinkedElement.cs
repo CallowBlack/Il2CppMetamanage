@@ -11,11 +11,11 @@ namespace Il2CppMetamanage.Library.Data.Model
         public SQLCppTypeInfo Element { get => _element.Item; }
 
         protected int _elementId;
-        protected SQLObject<SQLCppTypeInfo> _element;
+        protected LoadableObject<SQLCppTypeInfo> _element;
 
         protected SQLLinkedElement(int id) : base(id)
         {
-            _element = new SQLObject<SQLCppTypeInfo>(SQLLoadElement);
+            _element = new LoadableObject<SQLCppTypeInfo>(SQLLoadElement);
         }
 
         protected SQLLinkedElement(int id, string name, bool isDefault, int elementId) : base(id)
@@ -23,7 +23,7 @@ namespace Il2CppMetamanage.Library.Data.Model
             Name = name;
             IsDefault = isDefault;
             _elementId = elementId;
-            _element = new SQLObject<SQLCppTypeInfo>(SQLLoadElement);
+            _element = new LoadableObject<SQLCppTypeInfo>(SQLLoadElement);
         }
 
         private SQLCppTypeInfo SQLLoadElement()

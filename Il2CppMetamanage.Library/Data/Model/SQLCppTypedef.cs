@@ -8,8 +8,6 @@ namespace Il2CppMetamanage.Library.Data.Model
 {
     public class SQLCppTypedef : SQLLinkedElement
     {
-        public SQLCppTypedef(int id) : base(id) { }
-
         public SQLCppTypedef(int id, string name, bool isDefault, int elementId)
             : base(id, name, isDefault, elementId) {
             TypeKind = SQLCppTypeKind.Typedef;
@@ -34,7 +32,6 @@ namespace Il2CppMetamanage.Library.Data.Model
                     elementText = elementText[..endText];
                 return $"typedef {elementText} {Name};\r\n";
             }
-                
         }
     }
 }

@@ -20,8 +20,8 @@ namespace Il2CppMetamanage.Library.Data.Model
             set => _returnType.Item = value;
         }
 
-        private readonly SQLObject<List<SQLDataManager.NamedType>> _parameters;
-        private readonly SQLObject<SQLCppTypeInfo> _returnType;
+        private readonly LoadableObject<List<SQLDataManager.NamedType>> _parameters;
+        private readonly LoadableObject<SQLCppTypeInfo> _returnType;
         private readonly int _returnTypeId;
 
         public SQLCppFunctionType(int id) : base(id)

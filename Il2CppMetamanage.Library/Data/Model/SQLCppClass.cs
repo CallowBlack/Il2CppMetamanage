@@ -16,7 +16,7 @@ namespace Il2CppMetamanage.Library.Data.Model
 
         public List<SQLDataManager.NamedType> Fields { get => _fields.Item; set => _fields.Item = value; }
 
-        private readonly SQLObject<List<SQLDataManager.NamedType>> _fields;
+        private readonly LoadableObject<List<SQLDataManager.NamedType>> _fields;
 
         public SQLCppClass(int id, string name, bool isDefault, int align, CppAst.CppClassKind kind) 
             : base(id)

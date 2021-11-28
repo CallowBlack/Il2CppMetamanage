@@ -10,18 +10,7 @@ namespace Il2CppMetamanage.Library.Data.Model
     {
         public Dictionary<string, long> Values { get => _values.Item; set => _values.Item = value; }
 
-        private readonly SQLObject<Dictionary<string, long>> _values;
-
-        //public SQLCppEnum(SQLDataManager manager, int id) : base(manager, id)
-        //{
-        //    var reader = SQLLoadDataById("CppEnums", new string[] { "name", "isDefault" });
-
-        //    Name = reader.GetString(0);
-        //    IsDefault = reader.GetBoolean(1);
-
-        //    TypeKind = SQLCppTypeKind.Enum;
-        //    _values = new (SQLLoadValues);
-        //}
+        private readonly LoadableObject<Dictionary<string, long>> _values;
 
         public SQLCppEnum(int id, string name, bool isDefault) : base(id)
         {

@@ -6,15 +6,16 @@ using System.Threading.Tasks;
 
 namespace Il2CppMetamanage.Library.Data.Model
 {
-    public class SQLObject<T>
+    public class LoadableObject<T>
     {
         public delegate T LoadItem();
 
         private LoadItem LoadItemCallback { get; }
 
-        public T Item {
-
-            get {
+        public T Item 
+        {
+            get 
+            {
                 if (!IsLoaded)
                 {
                     _item = LoadItemCallback();
@@ -29,7 +30,6 @@ namespace Il2CppMetamanage.Library.Data.Model
                 _item = value;
                 _isLoaded = true;
             }
-
         }
 
         public bool IsLoaded {
@@ -39,7 +39,7 @@ namespace Il2CppMetamanage.Library.Data.Model
         private bool _isLoaded;
         private T _item;
 
-        public SQLObject(LoadItem loadItemCallback)
+        public LoadableObject(LoadItem loadItemCallback)
         {
             LoadItemCallback = loadItemCallback;
         }

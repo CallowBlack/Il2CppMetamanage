@@ -8,6 +8,7 @@ namespace Il2CppMetamanage.Library.Data.Model
 {
     public class SQLCppPrimitive : SQLNamedEntry
     {
+        private static Dictionary<int, SQLCppPrimitive> primitivesData = new Dictionary<int, SQLCppPrimitive>();
 
         public static SQLCppPrimitive GetPrimitive(int id) 
         {
@@ -15,7 +16,6 @@ namespace Il2CppMetamanage.Library.Data.Model
                 FillPrimitiveData();
             return primitivesData[id];
         }
-        private static Dictionary<int, SQLCppPrimitive> primitivesData = new Dictionary<int, SQLCppPrimitive>();
 
         private SQLCppPrimitive(int id, string name) : base(id, name, true ) {
             TypeKind = SQLCppTypeKind.Primitive;
