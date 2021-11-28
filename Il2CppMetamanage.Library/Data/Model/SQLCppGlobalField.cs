@@ -27,9 +27,9 @@ namespace Il2CppMetamanage.Library.Data.Model
         {
             var namedElement = Element.Entry as SQLNamedEntry;
             if (IsTypePtr)
-                return $"DO_TYPEDEF(0x{Address:08X}, {namedElement.Name});";
+                return $"DO_TYPEDEF(0x{Address:X8}, {namedElement.Name});";
             else if (IsMetaInfo)
-                return $"DO_APP_FUNC_METHODINFO(0x{Address:08X}, {Name});";
+                return $"DO_APP_FUNC_METHODINFO(0x{Address:X8}, {Name});";
             else
                 return $"{Element} {Name};";
         }

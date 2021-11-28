@@ -31,7 +31,7 @@ namespace Il2CppMetamanage.Library.Data.Model
 
         public override string ToString()
         {
-            return $"DO_APP_FUNC(0x{Address:08X}, {ReturnType}, {Name}, ({string.Join(',', Parameters)}));\r\n";
+            return $"DO_APP_FUNC(0x{Address:X8}, {ReturnType}, {Name}, ({string.Join(',', Parameters)}));\r\n";
         }
     }
 }
