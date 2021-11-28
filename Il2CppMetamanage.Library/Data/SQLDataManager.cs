@@ -371,8 +371,13 @@ namespace Il2CppMetamanage.Library.Data
                 
                 -- Creating indexies
                 CREATE INDEX IF NOT EXISTS ownerIdMemberIndex ON CppClassMembers(ownerId);
+                CREATE INDEX IF NOT EXISTS onwerIdEnumValues ON CppEnumValues(ownerId);
                 CREATE INDEX IF NOT EXISTS ownerIdParameterIndex ON CppFunctionParameters(ownerId);
+
                 CREATE INDEX IF NOT EXISTS classNameIndex ON CppClassMembers(name);
+                CREATE INDEX IF NOT EXISTS enumNameIndex ON CppEnums(name);
+                CREATE INDEX IF NOT EXISTS fieldsNameIndex ON CppFields(name);
+                CREATE INDEX IF NOT EXISTS functionNameIndex ON CppFunctions(name);
             ";
 			command.ExecuteNonQuery();
         }
