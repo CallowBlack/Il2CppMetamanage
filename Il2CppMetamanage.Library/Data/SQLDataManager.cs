@@ -218,16 +218,10 @@ namespace Il2CppMetamanage.Library.Data
             return result;
         }
 
-        public static SqliteDataReader GetDataByIds(IEnumerable<int> ids, string tableName, IEnumerable<string> fields)
+        public static SqliteDataReader GetDataByIds(IEnumerable<int> ids, string tableName)
         {
             var command = Connection.CreateCommand();
-            command.CommandText = "SELECT ";
-            
-            foreach (var field in fields)
-                command.CommandText += $"[{field}],";
-            
-            command.CommandText = command.CommandText.TrimEnd(',');
-            command.CommandText += $" FROM [{tableName}] WHERE [id] IN ({string.Join(',', ids)})";
+            command.CommandText += $"SELECT * FROM [{tableName}] WHERE [id] IN ({string.Join(',', ids)})";
             
             var reader = command.ExecuteReader();
             if (!reader.HasRows)
@@ -282,9 +276,9 @@ namespace Il2CppMetamanage.Library.Data
                 CREATE TABLE [CppClasses] (
                     [id]    INTEGER,
                     [name]  TEXT NOT NULL UNIQUE,
+                    [isDefault] INTEGER NOT NULL DEFAULT 0,
                     [align] INTEGER,
                     [kind] INTEGER DEFAULT 0,
-                    [isDefault] INTEGER NOT NULL DEFAULT 0,
 	                PRIMARY KEY([id] AUTOINCREMENT)
                 );
 
@@ -312,9 +306,9 @@ namespace Il2CppMetamanage.Library.Data
                 CREATE TABLE [CppFunctions](
                     [id]    INTEGER,
                     [name]  TEXT NOT NULL UNIQUE,
+                    [isDefault] INTEGER NOT NULL DEFAULT 0,
                     [address]   INTEGER,
                     [functionTypeId] INTEGER NOT NULL,
-                    [isDefault] INTEGER NOT NULL DEFAULT 0,
                     FOREIGN KEY([functionTypeId]) REFERENCES [CppFunctionTypes]([id]),
                     PRIMARY KEY([id] AUTOINCREMENT)
                 );
@@ -344,9 +338,9 @@ namespace Il2CppMetamanage.Library.Data
 
                 CREATE TABLE [CppClassMembers](
                     [id]    INTEGER NOT NULL,
+                    [name]  TEXT,
                     [ownerId]   INTEGER NOT NULL,
                     [elementId] INTEGER NOT NULL,
-                    [name]  TEXT,
                     FOREIGN KEY([elementId]) REFERENCES [CppElements]([id]),
                     FOREIGN KEY([ownerId]) REFERENCES [CppClasses]([id]),
                     PRIMARY KEY([id] AUTOINCREMENT)
@@ -354,27 +348,27 @@ namespace Il2CppMetamanage.Library.Data
 
                 CREATE TABLE [CppEnumValues](
                     [id]    INTEGER NOT NULL,
-                    [ownerId]   INTEGER NOT NULL,
                     [name]  TEXT NOT NULL,
                     [value] INTEGER NOT NULL,
+                    [ownerId]   INTEGER NOT NULL,
                     FOREIGN KEY([ownerId]) REFERENCES [CppEnums]([id]),
                     PRIMARY KEY([id] AUTOINCREMENT)
                 );
 
                 CREATE TABLE [CppFunctionParameters](
+                    [name]  TEXT,
                     [ownerId]   INTEGER NOT NULL,
                     [elementId] INTEGER NOT NULL,
-                    [name]  TEXT,
                     FOREIGN KEY([ownerId]) REFERENCES [CppFunctionTypes]([id]),
                     FOREIGN KEY([elementId]) REFERENCES [CppElements]([id])
                 );
 
                 CREATE TABLE [CppFields](
                     [id]   INTEGER NOT NULL,
-                    [elementId] INTEGER,
                     [name]  TEXT,
-                    [address] INTEGER,
                     [isDefault] INTEGER,
+                    [address] INTEGER,
+                    [elementId] INTEGER,
                     [isTypePtr] INTEGER,
                     FOREIGN KEY([elementId]) REFERENCES [CppElements]([id]),
                     PRIMARY KEY([id] AUTOINCREMENT)

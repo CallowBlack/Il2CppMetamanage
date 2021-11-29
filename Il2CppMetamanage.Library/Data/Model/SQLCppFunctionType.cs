@@ -26,9 +26,9 @@ namespace Il2CppMetamanage.Library.Data.Model
 
         public SQLCppFunctionType(int id) : base(id)
         {
-            using var reader = SQLDataManager.GetDataByIds(new int[] { id }, "CppFunctionTypes", new string[] { "returnId" });
+            using var reader = SQLDataManager.GetDataByIds(new int[] { id }, "CppFunctionTypes");
             reader.Read();
-            _returnTypeId = reader.GetInt32(0);
+            _returnTypeId = reader.GetInt32(1);
             _parameters = new(SQLLoadParameters);
             _returnType = new(SQLLoadReturnType);
             TypeKind = SQLCppTypeKind.FunctionType;

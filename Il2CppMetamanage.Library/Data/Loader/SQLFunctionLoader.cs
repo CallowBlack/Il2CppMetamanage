@@ -10,9 +10,9 @@ namespace Il2CppMetamanage.Library.Data.Loader
 {
     public class SQLFunctionLoader : SQLEntryLoader<SQLCppFunction>
     {
-        public SQLFunctionLoader() : base(SQLLoadFunctions) { }
+        public SQLFunctionLoader() : base("CppFunctions") { }
 
-        private static void SQLLoadFunctions(Dictionary<int, SQLEntryPromise> promises)
+        protected override void LoadElements(Dictionary<int, SQLEntryPromise> promises)
         {
             var command = SQLDataManager.Connection.CreateCommand();
             command.CommandText = @$"
@@ -32,7 +32,7 @@ namespace Il2CppMetamanage.Library.Data.Loader
             }
         }
 
-        private static SQLCppFunction ReadElement(SqliteDataReader reader)
+        public override SQLCppFunction ReadElement(SqliteDataReader reader)
         {
             var id = reader.GetInt32(0);
             var name = reader.GetString(1);
@@ -44,11 +44,6 @@ namespace Il2CppMetamanage.Library.Data.Loader
             var functionType = new SQLCppFunctionType(functionTypeId, returnId);
 
             return new SQLCppFunction(id, name, isDefault, address, functionType);
-        }
-
-        protected override int GetCount()
-        {
-            return SQLDataManager.GetCountTableElements("CppFunctions");
         }
 
         public override List<SQLCppFunction> GetNextElements(int id, int count)
