@@ -88,33 +88,60 @@ namespace Il2CppMetamanage.Library.Data
                     switch (item.TypeKind)
                     {
                         case SQLCppTypeKind.Primitive:
-                            continue;
                         case SQLCppTypeKind.Enum:
                             continue;
                         case SQLCppTypeKind.Class:
-                            var cls = item as SQLCppClass;
-                            foreach (var field in cls.Fields)
                             {
-                                if (field.typeInfo.Entry.TypeKind == SQLCppTypeKind.Class)
+                                var cls = item as SQLCppClass;
+                                foreach (var member in cls.Fields)
                                 {
-                                    var childCls = field.typeInfo.Entry as SQLCppClass;
-                                    if (childCls.IsInner)
-                                        continue;
+                                    if (member.typeInfo.Entry.TypeKind == SQLCppTypeKind.Class)
+                                    {
+                                        var childCls = member.typeInfo.Entry as SQLCppClass;
+                                        if (childCls.IsInner)
+                                            continue;
+                                    }
+                                    childs.Add(member.typeInfo.Entry);
                                 }
-                                childs.Add(field.typeInfo.Entry);
+
+                                var command = Connection.CreateCommand();
+                                command.CommandText = @$"SELECT field.* FROM CppFields as field 
+                                                    LEFT JOIN CppElements AS elem ON field.elementId = elem.id WHERE elem.classId = {cls.Id}";
+                                var reader = command.ExecuteReader();
+                                if (reader.Read())
+                                {
+                                    var field = FieldLoader.ReadElement(reader);
+                                    childs.Add(field);
+                                }
                             }
                             break;
                         case SQLCppTypeKind.Typedef:
-                            var typedef = item as SQLCppTypedef;
-                            childs.Add(typedef.Element.Entry);
+                            {
+                                var typedef = item as SQLCppTypedef;
+                                childs.Add(typedef.Element.Entry);
+                            }
                             break;
                         case SQLCppTypeKind.Function:
-                            var func = item as SQLCppFunction;
-                            childs.AddRange(func.Parameters.ConvertAll((it) => it.typeInfo.Entry));
+                            {
+                                var func = item as SQLCppFunction;
+                                childs.AddRange(func.Parameters.ConvertAll((it) => it.typeInfo.Entry));
+
+                                var metaInfoField = FieldLoader[$"{func.Name}__MethodInfo"];
+                                if (metaInfoField is not null)
+                                    childs.Add(metaInfoField);
+                            }
                             break;
                         case SQLCppTypeKind.FunctionType:
-                            var funcType = item as SQLCppFunctionType;
-                            childs.AddRange(funcType.Parameters.ConvertAll((it) => it.typeInfo.Entry));
+                            {
+                                var funcType = item as SQLCppFunctionType;
+                                childs.AddRange(funcType.Parameters.ConvertAll((it) => it.typeInfo.Entry));
+                            }
+                            break;
+                        case SQLCppTypeKind.Field:
+                            {
+                                var field = item as SQLCppGlobalField;
+                                childs.Add(field.Element.Entry);
+                            }
                             break;
                         default:
                             throw new NotImplementedException();
@@ -383,6 +410,8 @@ namespace Il2CppMetamanage.Library.Data
                 CREATE INDEX IF NOT EXISTS enumNameIndex ON CppEnums(name);
                 CREATE INDEX IF NOT EXISTS fieldsNameIndex ON CppFields(name);
                 CREATE INDEX IF NOT EXISTS functionNameIndex ON CppFunctions(name);
+
+                CREATE INDEX IF NOT EXISTS elementsClassIdIndex ON CppElements(classId);
             ";
 			command.ExecuteNonQuery();
         }

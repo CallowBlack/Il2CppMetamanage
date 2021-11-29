@@ -42,7 +42,7 @@ namespace Tests
 
             while (true)
             {
-                TestFindByName();
+                TestDependencies();
                 Console.WriteLine("Any key to continue...");
                 Console.ReadKey();
                 Console.Clear();
@@ -144,7 +144,7 @@ namespace Tests
             }
             watch.Stop();
             Console.WriteLine($"Find takes {watch.Elapsed.TotalMilliseconds} ms.");
-            Console.WriteLine($"Found {element.Count} dependencies.");
+            Console.WriteLine($"Found {element.Count} elements with this name.");
         }
 
         static void TestDependencies()
@@ -211,6 +211,7 @@ namespace Tests
                         counts["Typedefs"]++;
                         break;
                     case SQLCppTypeKind.Field:
+                        Console.WriteLine(dependency);
                         counts["Fields"]++;
                         break;
                     case SQLCppTypeKind.FunctionType:
