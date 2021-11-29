@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Timers;
 using CppAst;
 using Il2CppMetamanage.Library;
 using Il2CppMetamanage.Library.Data;
@@ -41,7 +42,7 @@ namespace Tests
 
             while (true)
             {
-                TestLoaderFunctionality();
+                TestFindByName();
                 Console.WriteLine("Any key to continue...");
                 Console.ReadKey();
                 Console.Clear();
@@ -102,16 +103,124 @@ namespace Tests
             Console.WriteLine(field);
         }
 
-        static void TestClassFindDependencies()
+        static void TestFindByName()
         {
-            Console.Write("Class id: ");
-            var classId = int.Parse(Console.ReadLine());
+            Console.WriteLine("[1] Class count: " + SQLDataManager.ClassLoader.Count);
+            Console.WriteLine("[2] Enum count: " + SQLDataManager.EnumLoader.Count);
+            Console.WriteLine("[3] Field count: " + SQLDataManager.FieldLoader.Count);
+            Console.WriteLine("[4] Function count: " + SQLDataManager.FunctionLoader.Count);
+            Console.WriteLine("[5] Typedef count: " + SQLDataManager.TypedefLoader.Count);
+
+            Console.Write("Select type [1-5]: ");
+            var elementType = int.Parse(Console.ReadLine());
+            if (elementType > 5 || elementType < 1)
+                return;
+
+            Console.Write("Input part of name: ");
+            var name = Console.ReadLine();
+
+            Console.WriteLine("Finding by name...");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            List<SQLNamedEntry> element = new();
+            switch (elementType)
+            {
+                case 1:
+                    element.AddRange(SQLDataManager.ClassLoader.FindElementsByName(name));
+                    break;
+                case 2:
+                    element.AddRange(SQLDataManager.EnumLoader.FindElementsByName(name));
+                    break;
+                case 3:
+                    element.AddRange(SQLDataManager.FieldLoader.FindElementsByName(name));
+                    break;
+                case 4:
+                    element.AddRange(SQLDataManager.FunctionLoader.FindElementsByName(name));
+                    break;
+                case 5:
+                    element.AddRange(SQLDataManager.TypedefLoader.FindElementsByName(name));
+                    break;
+                default:
+                    throw new Exception();
+            }
+            watch.Stop();
+            Console.WriteLine($"Find takes {watch.Elapsed.TotalMilliseconds} ms.");
+            Console.WriteLine($"Found {element.Count} dependencies.");
+        }
+
+        static void TestDependencies()
+        {
+            Console.WriteLine("[1] Class count: " + SQLDataManager.ClassLoader.Count);
+            Console.WriteLine("[2] Enum count: " + SQLDataManager.EnumLoader.Count);
+            Console.WriteLine("[3] Field count: " + SQLDataManager.FieldLoader.Count);
+            Console.WriteLine("[4] Function count: " + SQLDataManager.FunctionLoader.Count);
+            Console.WriteLine("[5] Typedef count: " + SQLDataManager.TypedefLoader.Count);
+
+            Console.Write("Select type [1-5]: ");
+            var elementType = int.Parse(Console.ReadLine());
+            if (elementType > 5 || elementType < 1)
+                return;
+
+            Console.Write("Input start id: ");
+            var startId = int.Parse(Console.ReadLine());
 
             Console.WriteLine("Finding dependencies...");
-            var cls = SQLDataManager.ClassLoader[classId];
-
-            var dependencies = SQLDataManager.GetDependencies(new SQLCppClass[] { cls });
-            Console.WriteLine($"Found {dependencies.Count} dependencies.");
+            SQLNamedEntry element;
+            switch (elementType)
+            {
+                case 1:
+                    element = SQLDataManager.ClassLoader[startId];
+                    break;
+                case 2:
+                    element = SQLDataManager.EnumLoader[startId];
+                    break;
+                case 3:
+                    element = SQLDataManager.FieldLoader[startId];
+                    break;
+                case 4:
+                    element = SQLDataManager.FunctionLoader[startId];
+                    break;
+                case 5:
+                    element = SQLDataManager.TypedefLoader[startId];
+                    break;
+                default:
+                    throw new Exception();
+            }
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var dependencies = SQLDataManager.GetDependencies(new [] { element });
+            watch.Stop();
+            Console.WriteLine($"Find takes {watch.Elapsed.TotalMilliseconds} ms.");
+            
+            var counts = new Dictionary<string, int>();
+            counts["Classes"] = 0;
+            counts["Typedefs"] = 0;
+            counts["Enums"] = 0;
+            counts["Fields"] = 0;
+            counts["Functions"] = 0;
+            Console.WriteLine($"Found {dependencies.Count} dependencies:");
+            foreach (var dependency in dependencies)
+            {
+                switch (dependency.TypeKind)
+                {
+                    case SQLCppTypeKind.Class:
+                        counts["Classes"]++;
+                        break;
+                    case SQLCppTypeKind.Enum:
+                        counts["Enums"]++;
+                        break;
+                    case SQLCppTypeKind.Typedef:
+                        counts["Typedefs"]++;
+                        break;
+                    case SQLCppTypeKind.Field:
+                        counts["Fields"]++;
+                        break;
+                    case SQLCppTypeKind.FunctionType:
+                    case SQLCppTypeKind.Function:
+                        counts["Functions"]++;
+                        break;
+                }
+            }
+            foreach (var entry in counts)
+                Console.WriteLine($"\t{entry.Key} -> {entry.Value}");
         }
     }
 }

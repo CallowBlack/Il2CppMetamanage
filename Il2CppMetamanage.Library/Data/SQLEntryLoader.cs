@@ -37,6 +37,14 @@ namespace Il2CppMetamanage.Library.Data
                 return _cachedElements[i];
             }
         }
+
+        public T this[string name]
+        {
+            get
+            {
+                return LoadElementsByName(name);
+            }
+        }
         
         public bool IsCached(int i)
         {
@@ -50,7 +58,11 @@ namespace Il2CppMetamanage.Library.Data
 
         private readonly LoadableObject<int> _count;
         private int _maxCachedSize = 1000;
+        
         private readonly string _tableName;
+
+        protected string _selectSQL;
+
         public SQLEntryLoader(string tableName)
         {
             _cachedElements = new Dictionary<int, T>();
@@ -58,6 +70,7 @@ namespace Il2CppMetamanage.Library.Data
             _promisedItemsDict = new Dictionary<int, SQLEntryPromise>();
             _count = new(GetCount);
             _tableName = tableName;
+            _selectSQL = $"SELECT * FROM [{_tableName}]";
         }
 
         protected virtual int GetCount()
@@ -70,10 +83,43 @@ namespace Il2CppMetamanage.Library.Data
             throw new NotImplementedException();
         }
 
+        protected virtual T LoadElementsByName(string name)
+        {
+            var command = SQLDataManager.Connection.CreateCommand();
+            command.CommandText = $"{_selectSQL} WHERE [name] = $name;";
+
+            var nameParameter = SQLDataManager.CreateParameter(command, "name");
+            nameParameter.Value = name;
+
+            using var reader = command.ExecuteReader();
+            var elements = new List<T>();
+            if (reader.Read())
+                return ReadElement(reader);
+            else
+                return null;
+        }
+
+        public virtual List<T> FindElementsByName(string name)
+        {
+            var command = SQLDataManager.Connection.CreateCommand();
+            command.CommandText = $"{_selectSQL} WHERE [name] LIKE $name;";
+
+            var nameParameter = SQLDataManager.CreateParameter(command, "name");
+            nameParameter.Value = $"%{name}%";
+
+            using var reader = command.ExecuteReader();
+            var elements = new List<T>();
+            while (reader.Read())
+                elements.Add(ReadElement(reader));
+            return elements;
+        }
+
         protected virtual void LoadElements(Dictionary<int, SQLEntryPromise> promises)
         {
-            using var reader = SQLDataManager.GetDataByIds(promises.Keys, _tableName);
+            var command = SQLDataManager.Connection.CreateCommand();
+            command.CommandText = $"{_selectSQL} WHERE [id] IN ({string.Join(',',promises.Keys)});";
 
+            using var reader = command.ExecuteReader();
             while (reader.Read())
             {
                 var element = ReadElement(reader);
@@ -85,7 +131,7 @@ namespace Il2CppMetamanage.Library.Data
         public virtual List<T> GetNextElements(int id, int count)
         {
             var command = SQLDataManager.Connection.CreateCommand();
-            command.CommandText = $"SELECT * FROM [{_tableName}] WHERE [id] > {id} LIMIT {count};";
+            command.CommandText = $"{_selectSQL} WHERE [id] > {id} LIMIT {count};";
             using var reader = command.ExecuteReader();
 
             var elements = new List<T>();
