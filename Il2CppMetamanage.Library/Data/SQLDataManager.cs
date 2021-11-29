@@ -103,16 +103,6 @@ namespace Il2CppMetamanage.Library.Data
                                     }
                                     childs.Add(member.typeInfo.Entry);
                                 }
-
-                                var command = Connection.CreateCommand();
-                                command.CommandText = @$"SELECT field.* FROM CppFields as field 
-                                                    LEFT JOIN CppElements AS elem ON field.elementId = elem.id WHERE elem.classId = {cls.Id}";
-                                var reader = command.ExecuteReader();
-                                if (reader.Read())
-                                {
-                                    var field = FieldLoader.ReadElement(reader);
-                                    childs.Add(field);
-                                }
                             }
                             break;
                         case SQLCppTypeKind.Typedef:
@@ -162,6 +152,25 @@ namespace Il2CppMetamanage.Library.Data
                     typeInfoSet.Add(entry);
                     dependencies.Add(entry);
                 }
+            }
+
+            List<int> classIds = new();
+            foreach (var dependency in dependencies)
+            {
+                if (dependency.TypeKind == SQLCppTypeKind.Class)
+                {
+                    classIds.Add(dependency.Id);
+                }
+            }
+
+            var command = Connection.CreateCommand();
+            command.CommandText = @$"SELECT field.* FROM CppFields as field 
+                                                    LEFT JOIN CppElements AS elem ON field.elementId = elem.id WHERE elem.classId IN ({string.Join(',', classIds)})";
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var field = FieldLoader.ReadElement(reader);
+                dependencies.Add(field);
             }
 
             return dependencies;
